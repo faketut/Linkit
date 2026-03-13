@@ -1,6 +1,6 @@
 # Linkit
 
-Linkit is a browser extension for automating LinkedIn tasks such as connecting with people and managing skills.
+Linkit is a browser extension that support auto-connect with people and manage skills.
 
 ## Features
 
