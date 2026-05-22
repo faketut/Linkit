@@ -30,19 +30,18 @@ Linkit is a Chrome extension (Manifest V3) that auto-connects with People You Ma
 
 ## Project Structure
 
-| Path                                                               | Purpose                                                                                     |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `manifest.config.js`                                               | Source of truth for the MV3 manifest (consumed by `@crxjs/vite-plugin`).                    |
-| `vite.config.js`                                                   | Vite + React + CRX build pipeline.                                                          |
-| `images/`                                                          | Extension icons (16, 128).                                                                  |
-| `src/popup/`                                                       | Popup React app (`index.html`, `main.jsx`, `App.jsx`).                                      |
-| `src/options/`                                                     | Options React app (`index.html`, `main.jsx`, `App.jsx`).                                    |
-| `src/content/index.js`                                             | Content script injected into LinkedIn pages.                                                |
-| `src/shared/`                                                      | Shared constants, atoms, theme, popup→content messaging helpers.                            |
-| `dist/`                                                            | Build output (loaded as the unpacked extension).                                            |
-| `pages/assets/`, `tab/tab.js`, `pages/src/*.html`, `manifest.json` | **Legacy** pre-built artifacts retained for backwards compatibility; superseded by `dist/`. |
+| Path                   | Purpose                                                                  |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `manifest.config.js`   | Source of truth for the MV3 manifest (consumed by `@crxjs/vite-plugin`). |
+| `vite.config.js`       | Vite + React + CRX build pipeline.                                       |
+| `images/`              | Extension icons (16, 128).                                               |
+| `src/popup/`           | Popup React app (`index.html`, `main.jsx`, `App.jsx`).                   |
+| `src/options/`         | Options React app (`index.html`, `main.jsx`, `App.jsx`).                 |
+| `src/content/index.js` | Content script injected into LinkedIn pages.                             |
+| `src/shared/`          | Shared constants, atoms, theme, popup→content messaging helpers.         |
+| `dist/`                | Build output (loaded as the unpacked extension).                         |
 
-> Issue #1 (build pipeline) is now satisfied: edit `src/**`, then `npm run build` regenerates everything reproducibly into `dist/`.
+> `npm run build` regenerates everything into `dist/`. Source-tree edits go under `src/**`.
 
 ## Architecture
 

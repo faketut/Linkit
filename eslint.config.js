@@ -6,14 +6,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      // Legacy pre-built bundles — replaced by `npm run build`; kept for backwards
-      // compatibility while the rewrite stabilises. Excluded from lint.
-      'pages/assets/**',
-      'tab/**',
-    ],
+    ignores: ['dist/**', 'node_modules/**'],
   },
   js.configs.recommended,
   {

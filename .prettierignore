@@ -1,6 +1,4 @@
 dist/
 node_modules/
-pages/assets/
-tab/
 package-lock.json
 LICENSE
