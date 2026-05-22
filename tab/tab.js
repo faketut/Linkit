@@ -4038,8 +4038,42 @@ function Ho(e, t, n, i) {
   if (ft(e) && zt(t))
     return t;
 }
-const [ob, nb] = C(), [ab, oo, no] = C(), ib = C("100"), [sb, , Wo] = ib;
-var ce = /* @__PURE__ */ ((e) => (e.NextPageButton = "button.artdeco-pagination__button--next", e.ConnectButtonFromMyNetworkPage = "div.discover-entity-type-card__bottom-container button.ember-view:enabled:not(.artdeco-button--muted):not(.artdeco-button--full)", e.ConnectButtonFromSearchPage = "div.search-results-container button.ember-view:enabled:not(.artdeco-button--muted)", e.SendButtonFromSendInviteModal = "div.send-invite button.artdeco-button--primary", e.SendInMailsModalDismissButton = "#artdeco-modal-outlet .artdeco-modal__dismiss", e.CloseSendInMailsModalButton = '.msg-overlay-bubble-header__control .artdeco-button__icon[data-test-icon="close-small"]', e))(ce || {}), de = /* @__PURE__ */ ((e) => (e[e.Unidentified = 0] = "Unidentified", e[e.SearchPeople = 1] = "SearchPeople", e[e.MyNetwork = 2] = "MyNetwork", e[e.Skills = 3] = "Skills", e))(de || {}), dr = /* @__PURE__ */ ((e) => (e.SearchPeoplePage = "https://www.linkedin.com/search/results/people/", e.MyNetworkPage = "https://www.linkedin.com/mynetwork/", e.SkillsPage = "https://www.linkedin.com/in/*/details/skills/", e.PatternOfSearchPage = "linkedin.com/search/results/people", e.PatternOfMyNetworkPage = "linkedin.com/mynetwork", e.PatternOfSkillsPage = "linkedin.com/in/*/details/skills", e))(dr || {}), Y = /* @__PURE__ */ ((e) => (e[e.ConnectionEstablished = 0] = "ConnectionEstablished", e[e.RunningStateUpdated = 1] = "RunningStateUpdated", e[e.ButtonClicksCountUpdated = 2] = "ButtonClicksCountUpdated", e[e.StartAutoConnect = 3] = "StartAutoConnect", e[e.StopAutoConnect = 4] = "StopAutoConnect", e))(Y || {});
+const [ob, nb] = C(), [ab, oo, no] = C(), ib = C(100), [sb, , Wo] = ib;
+// --- Linkit safety constants (#10) ---
+const LINKIT_DAILY_CAP = 40;
+const LINKIT_SESSION_CAP_MIN = 1;
+const LINKIT_SESSION_CAP_MAX = 500;
+const LINKIT_INVITE_LIMIT_TEXT = /weekly invite limit|invitation limit|you[\u2019']ve reached the weekly|reached the weekly invitation/i;
+function linkitTodayKey() { return 'linkit_daily_' + new Date().toISOString().slice(0, 10); }
+function linkitGetDailyCount() {
+  return new Promise((r) => {
+    const k = linkitTodayKey();
+    chrome.storage.local.get([k], (v) => r(Number(v && v[k]) || 0));
+  });
+}
+function linkitIncrementDailyCount() {
+  const k = linkitTodayKey();
+  return new Promise((r) => {
+    chrome.storage.local.get([k], (v) => {
+      const next = (Number(v && v[k]) || 0) + 1;
+      chrome.storage.local.set({ [k]: next }, () => r(next));
+    });
+  });
+}
+function linkitIsInviteLimitReached() {
+  if (document.querySelector('#ip-fuse-limit-alert')) return true;
+  const modals = document.querySelectorAll('.artdeco-modal, [role="dialog"]');
+  for (const m of modals) {
+    if (LINKIT_INVITE_LIMIT_TEXT.test(m.textContent || '')) return true;
+  }
+  return false;
+}
+function linkitClampSessionCap(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 100;
+  return Math.min(LINKIT_SESSION_CAP_MAX, Math.max(LINKIT_SESSION_CAP_MIN, Math.floor(n)));
+}
+var ce = /* @__PURE__ */ ((e) => (e.NextPageButton = "button.artdeco-pagination__button--next", e.ConnectButtonFromMyNetworkPage = 'button[aria-label^="Invite "][aria-label$=" to connect"]:not([disabled]):not(.artdeco-button--muted)', e.ConnectButtonFromSearchPage = "div.search-results-container button.ember-view:enabled:not(.artdeco-button--muted)", e.SendButtonFromSendInviteModal = "div.send-invite button.artdeco-button--primary", e.SendInMailsModalDismissButton = "#artdeco-modal-outlet .artdeco-modal__dismiss", e.CloseSendInMailsModalButton = '.msg-overlay-bubble-header__control .artdeco-button__icon[data-test-icon="close-small"]', e.MyNetworkShowAllPymkLink = 'a[href*="/mynetwork/cohort/"], a[href*="/mynetwork/catch-up/"]', e.MyNetworkPymkCohortUrl = 'https://www.linkedin.com/mynetwork/cohort/pymk/', e))(ce || {}), de = /* @__PURE__ */ ((e) => (e[e.Unidentified = 0] = "Unidentified", e[e.SearchPeople = 1] = "SearchPeople", e[e.MyNetwork = 2] = "MyNetwork", e[e.Skills = 3] = "Skills", e))(de || {}), dr = /* @__PURE__ */ ((e) => (e.SearchPeoplePage = "https://www.linkedin.com/search/results/people/", e.MyNetworkPage = "https://www.linkedin.com/mynetwork/", e.SkillsPage = "https://www.linkedin.com/in/*/details/skills/", e.PatternOfSearchPage = "linkedin.com/search/results/people", e.PatternOfMyNetworkPage = "linkedin.com/mynetwork", e.PatternOfSkillsPage = "linkedin.com/in/*/details/skills", e))(dr || {}), Y = /* @__PURE__ */ ((e) => (e[e.ConnectionEstablished = 0] = "ConnectionEstablished", e[e.RunningStateUpdated = 1] = "RunningStateUpdated", e[e.ButtonClicksCountUpdated = 2] = "ButtonClicksCountUpdated", e[e.StartAutoConnect = 3] = "StartAutoConnect", e[e.StopAutoConnect = 4] = "StopAutoConnect", e))(Y || {});
 function lb(e) {
   return new Promise((t) => setTimeout(t, e));
 }
@@ -4047,7 +4081,7 @@ async function cb() {
   const e = { maximumAutoConnectionsPerSession: Wo() }, { maximumAutoConnectionsPerSession: t } = await new Promise((n) => {
     chrome.storage.sync.get(e, (i) => n(i));
   });
-  sb(t);
+  sb(linkitClampSessionCap(t));
 }
 function De(e) {
   const { message: t, port: n } = e;
@@ -4064,7 +4098,7 @@ tb({
     initialColorMode: "dark"
   }
 });
-const No = 5, bb = 1500, ub = 3e3, fb = 1e3, Lo = 500, [gb, hb] = C(), [mb, pb] = C(), [yb, Sb] = C(), [vb, xb] = C(), [$b, _b] = C(), [ao, wb] = C(), [zb, Cb, kb] = C(""), [Ab, Pb] = C(), [Tb, Bb] = C(), [Fb, Mb] = C(), [Eb, Db, or] = C(0), [io, , jb] = C(de.Unidentified), [nr, Ib, br] = C(!1);
+const No = 5, bb = 3e3, ub = 8e3, fb = 1e3, Lo = 500, [gb, hb] = C(), [mb, pb] = C(), [yb, Sb] = C(), [vb, xb] = C(), [$b, _b] = C(), [ao, wb] = C(), [zb, Cb, kb] = C(""), [Ab, Pb] = C(), [Tb, Bb] = C(), [Fb, Mb] = C(), [Eb, Db, or] = C(0), [io, , jb] = C(de.Unidentified), [nr, Ib, br] = C(!1);
 function $t(e) {
   e.focus(), e.click();
 }
@@ -4109,9 +4143,23 @@ function Lb() {
 }
 function ut() {
   const e = br(), t = jb();
-  e && [de.MyNetwork, de.SearchPeople, de.Skills].includes(t) && Hb(
-    t === de.MyNetwork ? ce.ConnectButtonFromMyNetworkPage : t === de.SearchPeople ? ce.ConnectButtonFromSearchPage : null
-  );
+  if (!e) return;
+  // On My Network landing/grow pages, advance to the PYMK "Show all" cohort page first.
+  // The PYMK card grid on /mynetwork/ shows only a handful of profiles; the cohort page
+  // exposes a long, scrollable list of Invite buttons that the selector below matches.
+  if (t === de.MyNetwork) {
+    const p = window.location.pathname.replace(/\/+$/, '');
+    if (p === '/mynetwork' || p === '/mynetwork/grow') {
+      const link = Array.from(document.querySelectorAll(ce.MyNetworkShowAllPymkLink))
+        .find((a) => /show all|see all/i.test((a.textContent || '').trim()));
+      if (link) { $t(link); return; }
+      window.location.assign(ce.MyNetworkPymkCohortUrl);
+      return;
+    }
+  }
+  if ([de.MyNetwork, de.SearchPeople, de.Skills].includes(t)) {
+    Hb(t === de.MyNetwork ? ce.ConnectButtonFromMyNetworkPage : t === de.SearchPeople ? ce.ConnectButtonFromSearchPage : null);
+  }
 }
 
 // Function to find element by XPath
@@ -4120,127 +4168,116 @@ function findElementByXPath(xpath) {
   return result.singleNodeValue;
 }
 
+// #5 — event-driven wait helper (replaces fixed sleeps in the skill-deletion flow).
+// Resolves with the first truthy value returned by `selectorOrFn`, or `null` after `timeout` ms.
+// Accepts either a CSS selector string or a predicate function returning an element / truthy value.
+function waitForElement(selectorOrFn, { timeout = 5000, root } = {}) {
+  return new Promise((resolve) => {
+    const evaluate = () => {
+      try {
+        if (typeof selectorOrFn === 'function') return selectorOrFn();
+        return document.querySelector(selectorOrFn);
+      } catch { return null; }
+    };
+    const initial = evaluate();
+    if (initial) return resolve(initial);
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve(v);
+    };
+    const observer = new MutationObserver(() => {
+      const v = evaluate();
+      if (v) finish(v);
+    });
+    observer.observe(root || document.body || document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+    });
+    const timer = setTimeout(() => finish(null), timeout);
+  });
+}
+
+// Encapsulated lookups for the skill-deletion modals so they can be polled by waitForElement.
+function findSkillsEditButton() {
+  return findElementByXPath('//*[@id="navigation-add-edit-deeplink-edit-skills"]')
+    || document.querySelector('[data-control-name="edit_skills"]')
+    || document.querySelector('button[aria-label*="Edit"]')
+    || null;
+}
+function findSkillsDeleteButton() {
+  return findElementByXPath('/html/body/div[4]/div/div/div[3]/button[2]')
+    || document.querySelector('button[aria-label*="Delete"]')
+    || document.querySelector('[data-control-name="delete_skill"]')
+    || Array.from(document.querySelectorAll('button')).find((b) => /^\s*delete\s*$/i.test(b.textContent || ''))
+    || document.querySelector('[data-control-name="delete"]')
+    || null;
+}
+function findSkillsConfirmButton() {
+  return findElementByXPath('/html/body/div[4]/div[2]/div/div[3]/button[2]')
+    || document.querySelector('button[aria-label*="Confirm"]')
+    || document.querySelector('[data-control-name="confirm_delete"]')
+    || Array.from(document.querySelectorAll('button')).find((b) => /^\s*delete\s*$/i.test(b.textContent || ''))
+    || null;
+}
+
 // Function to check if there are any skills left to delete
 function hasSkillsToDelete() {
   // Check for edit button - if it exists, there are skills to delete
-  let editButton = findElementByXPath('//*[@id="navigation-add-edit-deeplink-edit-skills"]');
-  if (!editButton) {
-    editButton = document.querySelector('[data-control-name="edit_skills"]');
-  }
-  if (!editButton) {
-    editButton = document.querySelector('button[aria-label*="Edit"]');
-  }
-  return editButton !== null;
+  return findSkillsEditButton() !== null;
 }
 
 // Function to delete a single skill
 async function deleteSingleSkill() {
   try {
-    console.log('Starting single skill deletion...');
-    
-    // Step 1: Click edit button - using XPath from README.md
-    let editButton = findElementByXPath('//*[@id="navigation-add-edit-deeplink-edit-skills"]');
-    if (!editButton) {
-      editButton = document.querySelector('[data-control-name="edit_skills"]');
-    }
-    if (!editButton) {
-      editButton = document.querySelector('button[aria-label*="Edit"]');
-    }
-    
-    if (editButton) {
-      console.log('Edit button found, clicking...');
-      $t(editButton);
-      await lb(2000); // Wait longer for edit mode to load
-      
-      // Step 2: Click delete button - using updated XPath
-      let deleteButton = findElementByXPath('/html/body/div[4]/div/div/div[3]/button[2]');
-      if (!deleteButton) {
-        deleteButton = document.querySelector('button[aria-label*="Delete"]');
-      }
-      if (!deleteButton) {
-        deleteButton = document.querySelector('[data-control-name="delete_skill"]');
-      }
-      if (!deleteButton) {
-        deleteButton = document.querySelector('button:contains("Delete")');
-      }
-      if (!deleteButton) {
-        deleteButton = document.querySelector('[data-control-name="delete"]');
-      }
-      
-      if (deleteButton) {
-        console.log('Delete button found, clicking...');
-        $t(deleteButton);
-        await lb(1000); // Wait for confirmation dialog
-        
-        // Step 3: Click confirm delete button - using updated XPath
-        let confirmButton = findElementByXPath('/html/body/div[4]/div[2]/div/div[3]/button[2]');
-        if (!confirmButton) {
-          confirmButton = document.querySelector('button[aria-label*="Confirm"]');
-        }
-        if (!confirmButton) {
-          confirmButton = document.querySelector('[data-control-name="confirm_delete"]');
-        }
-        if (!confirmButton) {
-          confirmButton = document.querySelector('button:contains("Delete")');
-        }
-        
-        if (confirmButton) {
-          console.log('Confirm button found, clicking...');
-          $t(confirmButton);
-          await lb(2000); // Wait for deletion to complete
-          console.log('Skill deleted successfully');
-          return true;
-        } else {
-          console.log('Confirm delete button not found');
-          return false;
-        }
-      } else {
-        console.log('Delete button not found');
-        return false;
-      }
-    } else {
-      console.log('Edit button not found');
-      return false;
-    }
+    // Step 1: Click edit button
+    const editButton = findSkillsEditButton();
+    if (!editButton) return false;
+    $t(editButton);
+
+    // Step 2: Wait for the edit-mode delete button to appear, then click it (#5: was await lb(2000))
+    const deleteButton = await waitForElement(findSkillsDeleteButton, { timeout: 5000 });
+    if (!deleteButton) return false;
+    $t(deleteButton);
+
+    // Step 3: Wait for the confirmation dialog's confirm button, then click it (#5: was await lb(1000))
+    const confirmButton = await waitForElement(findSkillsConfirmButton, { timeout: 5000 });
+    if (!confirmButton) return false;
+    $t(confirmButton);
+
+    // Step 4: Wait for the confirm modal to close, signalling deletion is complete (#5: was await lb(2000))
+    await waitForElement(() => (findSkillsConfirmButton() ? null : true), { timeout: 5000 });
+    return true;
   } catch (error) {
-    console.error('Error deleting skill:', error);
+    console.error('Linkit: error deleting skill:', error);
     return false;
   }
 }
 
 // Function to delete all skills continuously
 async function deleteAllSkills() {
-  console.log('Starting delete all skills process...');
   let deletedCount = 0;
-  let maxAttempts = 50; // Prevent infinite loop
+  const maxAttempts = 50; // Prevent infinite loop
   let attempts = 0;
-  
+
   while (hasSkillsToDelete() && attempts < maxAttempts) {
     attempts++;
-    console.log(`Attempt ${attempts}: Checking for skills to delete...`);
-    
     const success = await deleteSingleSkill();
     if (success) {
       deletedCount++;
-      console.log(`Successfully deleted skill ${deletedCount}`);
-      
-      // Wait a bit before checking for next skill
-      await lb(1000);
+      // #5: replaced fixed 1s sleep with event-driven wait for the next edit button to appear.
+      // hasSkillsToDelete() drives the loop; capped at 2s so we exit promptly when the list is empty.
+      await waitForElement(findSkillsEditButton, { timeout: 2000 });
     } else {
-      console.log('Failed to delete skill, stopping process');
+      // Failed to delete skill, stop process
       break;
     }
   }
-  
-  if (attempts >= maxAttempts) {
-    console.log('Reached maximum attempts, stopping delete process');
-  }
-  
-  if (!hasSkillsToDelete()) {
-    console.log('No more skills to delete. All skills have been removed!');
-  }
-  
-  console.log(`Delete all skills process completed. Deleted ${deletedCount} skills.`);
+
   return deletedCount;
 }
 
@@ -4253,14 +4290,32 @@ async function deleteSkills() {
 function checkAndDeleteSkills() {
   const currentUrl = window.location.href;
   if (currentUrl.includes('/details/skills/')) {
-    console.log('On skills page, starting deletion process...');
     deleteSkills();
   }
 }
 (async () => (Cb((e) => {
   e.includes(dr.PatternOfSearchPage) ? Ab() : e.includes(dr.PatternOfMyNetworkPage) ? Tb() : e.includes(dr.PatternOfSkillsPage) ? checkAndDeleteSkills() : Fb();
 }), _b(() => nr(!0)), wb(() => nr(!1)), Mb(() => nr(!1)), Sb(async () => {
-  Eb(or() + 1), Ob(), await lb(Aa(bb, ub)), br() && (or() >= Number(Wo()) ? ao() : ut());
+  // Click counted + dismiss any send-invite/in-mail modals
+  Eb(or() + 1), Ob();
+  // #10 — persistent daily counter across sessions
+  const dailyCount = await linkitIncrementDailyCount();
+  // #10 — wider, jittered delay between clicks (3-8s default)
+  await lb(Aa(bb, ub));
+  if (!br()) return;
+  // #10 — bail out if LinkedIn shows the invite-limit modal
+  if (linkitIsInviteLimitReached()) {
+    console.warn('[Linkit] LinkedIn invite-limit modal detected; stopping.');
+    return ao();
+  }
+  // #10 — bail out at daily cap
+  if (dailyCount >= LINKIT_DAILY_CAP) {
+    console.warn('[Linkit] Daily invite cap reached (' + LINKIT_DAILY_CAP + '); stopping.');
+    return ao();
+  }
+  // Existing session cap
+  if (or() >= Number(Wo())) return ao();
+  return ut();
 }), Db((e) => {
   const t = no();
   t && De({ message: { id: Y.ButtonClicksCountUpdated, content: e }, port: t });
@@ -4278,10 +4333,20 @@ function checkAndDeleteSkills() {
   }
 }), // Add message listener for delete skills action
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "deleteSkills") {
-    console.log("Delete all skills action received from popup");
+  // #4 — validate sender and payload shape before acting on any message
+  if (!sender || sender.id !== chrome.runtime.id) {
+    return;
+  }
+  if (!request || typeof request !== 'object' || typeof request.action !== 'string') {
+    return;
+  }
+  const ALLOWED_ACTIONS = new Set(['deleteSkills']);
+  if (!ALLOWED_ACTIONS.has(request.action)) {
+    return;
+  }
+  if (request.action === 'deleteSkills') {
     checkAndDeleteSkills();
-    sendResponse({success: true});
+    sendResponse({ success: true });
   }
 }), Ib((e) => {
   const t = no();
