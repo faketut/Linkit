@@ -82,19 +82,19 @@ function focusClick(el) {
 }
 
 /**
- * Find a clickable button whose visible label (e.g. <span>Connect</span>)
- * matches `text` (case-insensitive, trimmed). Skips disabled/muted buttons.
- * Pass `exact: false` to allow substring matches.
+ * Find a clickable element (button or anchor) whose visible label
+ * (e.g. <span>Connect</span>) matches `text` (case-insensitive, trimmed).
+ * Skips disabled/muted controls. Pass `exact: false` for substring matches.
  */
 function findButtonByText(text, { root = document, exact = true } = {}) {
   const target = text.trim().toLowerCase();
-  const buttons = root.querySelectorAll('button');
-  for (const btn of buttons) {
-    if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') continue;
-    if (btn.classList.contains('artdeco-button--muted')) continue;
-    const label = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+  const nodes = root.querySelectorAll('button, a[role="button"], a');
+  for (const el of nodes) {
+    if (el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+    if (el.classList.contains('artdeco-button--muted')) continue;
+    const label = (el.innerText || el.textContent || '').trim().toLowerCase();
     if (!label) continue;
-    if (exact ? label === target : label.includes(target)) return btn;
+    if (exact ? label === target : label.includes(target)) return el;
   }
   return null;
 }
@@ -320,7 +320,36 @@ function onConnectButtonFound(btn) {
   void postClickCycle();
 }
 
+/**
+ * No Connect button visible. On My Network, try to expand a PYMK section:
+ *   1. "Load more" inside an already-open modal/section, or
+ *   2. "Show all" to open one.
+ * On Search pages, fall back to pagination.
+ */
 function onNoConnectButton() {
+  if (!isRunning.get()) return;
+  const type = pageType.get();
+
+  if (type === PageType.MyNetwork) {
+    const loadMore =
+      findButtonByText('Load more') || findButtonByText('Show more results');
+    if (loadMore) {
+      focusClick(loadMore);
+      setTimeout(() => driveAutoConnect(), 1500);
+      return;
+    }
+    const showAll = findButtonByText('Show all');
+    if (showAll) {
+      focusClick(showAll);
+      setTimeout(() => driveAutoConnect(), 1800);
+      return;
+    }
+    // Nothing more to expand — stop the loop.
+    console.info('[Linkit] No more Connect / Show all / Load more buttons found.');
+    stopAutoConnect();
+    return;
+  }
+
   clickNextPage();
 }
 
