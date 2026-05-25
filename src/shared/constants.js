@@ -11,9 +11,6 @@ export const Selectors = Object.freeze({
   SendInMailsModalDismissButton: '#artdeco-modal-outlet .artdeco-modal__dismiss',
   CloseSendInMailsModalButton:
     '.msg-overlay-bubble-header__control .artdeco-button__icon[data-test-icon="close-small"]',
-  MyNetworkShowAllPymkLink:
-    'a[href*="/mynetwork/cohort/"], a[href*="/mynetwork/catch-up/"]',
-  MyNetworkPymkCohortUrl: 'https://www.linkedin.com/mynetwork/cohort/pymk/',
 });
 
 /** What kind of LinkedIn page the content script is currently on. */

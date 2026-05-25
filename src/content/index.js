@@ -360,21 +360,10 @@ function driveAutoConnect() {
   if (!isRunning.get()) return;
   const type = pageType.get();
 
-  // On My Network landing/grow pages, advance to the PYMK "Show all" cohort page first.
-  if (type === PageType.MyNetwork) {
-    const path = window.location.pathname.replace(/\/+$/, '');
-    if (path === '/mynetwork' || path === '/mynetwork/grow') {
-      const link = Array.from(
-        document.querySelectorAll(Selectors.MyNetworkShowAllPymkLink),
-      ).find((a) => /show all|see all/i.test((a.textContent || '').trim()));
-      if (link) {
-        focusClick(link);
-        return;
-      }
-      window.location.assign(Selectors.MyNetworkPymkCohortUrl);
-      return;
-    }
-  }
+  // Modern LinkedIn renders PYMK cards directly on /mynetwork/ and
+  // /mynetwork/grow/. The legacy cohort/catch-up URLs now 404 or bounce to
+  // /mynetwork/catch-up/pymk/?skipRedirect=true, so we no longer navigate —
+  // we just scan the current page for "Connect" buttons.
 
   if ([PageType.MyNetwork, PageType.SearchPeople, PageType.Skills].includes(type)) {
     const cssSelector =
