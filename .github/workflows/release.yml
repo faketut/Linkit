@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/version label for the zip (e.g. v2.2.0)'
+        required: true
+        default: 'v2.2.0'
 
 permissions:
   contents: write
@@ -23,13 +31,25 @@ jobs:
 
       - run: npm run build
 
+      - name: Resolve version label
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "label=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            echo "label=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Package dist
         run: |
           cd dist
-          zip -r "../linkit-${GITHUB_REF_NAME}.zip" .
+          zip -r "../linkit-${{ steps.ver.outputs.label }}.zip" .
 
       - name: Create release and upload asset
         uses: softprops/action-gh-release@v2
         with:
-          files: linkit-${{ github.ref_name }}.zip
+          tag_name: ${{ steps.ver.outputs.label }}
+          files: linkit-${{ steps.ver.outputs.label }}.zip
           generate_release_notes: true
