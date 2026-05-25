@@ -81,6 +81,24 @@ function focusClick(el) {
   el.click();
 }
 
+/**
+ * Find a clickable button whose visible label (e.g. <span>Connect</span>)
+ * matches `text` (case-insensitive, trimmed). Skips disabled/muted buttons.
+ * Pass `exact: false` to allow substring matches.
+ */
+function findButtonByText(text, { root = document, exact = true } = {}) {
+  const target = text.trim().toLowerCase();
+  const buttons = root.querySelectorAll('button');
+  for (const btn of buttons) {
+    if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') continue;
+    if (btn.classList.contains('artdeco-button--muted')) continue;
+    const label = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+    if (!label) continue;
+    if (exact ? label === target : label.includes(target)) return btn;
+  }
+  return null;
+}
+
 function findElementByXPath(xpath) {
   const result = document.evaluate(
     xpath,
@@ -235,6 +253,12 @@ function dismissModals() {
   return new Promise((resolve) => {
     let attempts = 0;
     const id = setInterval(() => {
+      // Preferred: "Send without a note" on the add-note modal.
+      const sendWithoutNote =
+        findButtonByText('Send without a note') ||
+        findButtonByText('Send without note');
+      if (sendWithoutNote) focusClick(sendWithoutNote);
+
       const closeIcon = document.querySelector(Selectors.CloseSendInMailsModalButton);
       const closeBtn = closeIcon?.parentElement;
       if (closeBtn) focusClick(closeBtn);
@@ -242,11 +266,20 @@ function dismissModals() {
       const dismiss = document.querySelector(Selectors.SendInMailsModalDismissButton);
       if (dismiss) focusClick(dismiss);
 
-      const sendBtn = document.querySelector(Selectors.SendButtonFromSendInviteModal);
+      const sendBtn =
+        document.querySelector(Selectors.SendButtonFromSendInviteModal) ||
+        findButtonByText('Send now') ||
+        findButtonByText('Send');
       if (sendBtn) focusClick(sendBtn);
 
       attempts++;
-      if (sendBtn || dismiss || closeBtn || attempts > MAX_POLL_ATTEMPTS) {
+      if (
+        sendWithoutNote ||
+        sendBtn ||
+        dismiss ||
+        closeBtn ||
+        attempts > MAX_POLL_ATTEMPTS
+      ) {
         clearInterval(id);
         resolve(null);
       }
@@ -254,12 +287,17 @@ function dismissModals() {
   });
 }
 
-/** Scroll until a connect button matching `selector` appears, then click it. */
-function findAndClickConnect(selector) {
+/** Scroll until a connect button appears, then click it. `finder` may be a
+ *  CSS selector string or a function returning an element (or null). */
+function findAndClickConnect(finder) {
   let attempts = 0;
   const id = setInterval(() => {
     window.scrollTo(0, document.body.scrollHeight);
-    const btn = selector ? document.querySelector(selector) : null;
+    let btn = null;
+    if (typeof finder === 'function') btn = finder();
+    else if (typeof finder === 'string') btn = document.querySelector(finder);
+    // Always fall back to a visible "Connect" span button.
+    if (!btn) btn = findButtonByText('Connect');
     if (btn) {
       clearInterval(id);
       onConnectButtonFound(btn);
@@ -339,13 +377,19 @@ function driveAutoConnect() {
   }
 
   if ([PageType.MyNetwork, PageType.SearchPeople, PageType.Skills].includes(type)) {
-    const selector =
+    const cssSelector =
       type === PageType.MyNetwork
         ? Selectors.ConnectButtonFromMyNetworkPage
         : type === PageType.SearchPeople
           ? Selectors.ConnectButtonFromSearchPage
           : null;
-    findAndClickConnect(selector);
+    // Try the page-specific CSS selector first, fall back to a visible
+    // "Connect" span button on either page layout.
+    findAndClickConnect(
+      () =>
+        (cssSelector && document.querySelector(cssSelector)) ||
+        findButtonByText('Connect'),
+    );
   }
 }
 

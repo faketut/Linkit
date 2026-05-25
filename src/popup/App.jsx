@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAtom } from 'jotai';
 import {
+  Badge,
   Box,
   Button,
   ChakraProvider,
   CircularProgress,
   CircularProgressLabel,
+  Divider,
   Flex,
+  HStack,
   Heading,
-  List,
-  ListItem,
-  Spacer,
+  IconButton,
   Text,
   VStack,
 } from '@chakra-ui/react';
@@ -32,47 +33,88 @@ import {
   requestDeleteSkills,
 } from '../shared/actions.js';
 
-function Header() {
+const POPUP_WIDTH = '320px';
+
+function Header({ connected }) {
   return (
     <Flex
-      paddingX={5}
-      paddingY={2}
-      backgroundColor="gray.700"
+      px={5}
+      py={3}
       align="center"
-      width="260px"
+      bgGradient="linear(to-r, brand.700, brand.500)"
+      width={POPUP_WIDTH}
     >
-      <Box>
-        <Heading size="sm">Linkit</Heading>
-      </Box>
-      <Spacer />
-      <Box>
-        <Button size="sm" onClick={openOptions} aria-label="Open options">
-          <MdSettings />
-        </Button>
-      </Box>
+      <VStack align="start" spacing={0}>
+        <Heading size="md" color="white">
+          Linkit
+        </Heading>
+        <Text fontSize="xs" color="whiteAlpha.800">
+          LinkedIn auto-connect
+        </Text>
+      </VStack>
+      <Box flex="1" />
+      <HStack spacing={2}>
+        <Badge
+          variant="subtle"
+          colorScheme={connected ? 'green' : 'gray'}
+          borderRadius="full"
+          px={2}
+        >
+          {connected ? 'Ready' : 'Idle'}
+        </Badge>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          color="white"
+          _hover={{ bg: 'whiteAlpha.300' }}
+          aria-label="Open options"
+          icon={<MdSettings size={18} />}
+          onClick={openOptions}
+        />
+      </HStack>
     </Flex>
   );
 }
 
 function ActionList() {
   return (
-    <List spacing={3}>
-      <ListItem>
-        <Button onClick={openMyNetwork} leftIcon={<MdGroups />} width="full">
-          People You May Know
-        </Button>
-      </ListItem>
-      <ListItem>
-        <Button onClick={openSearchPeople} leftIcon={<MdPersonSearch />} width="full">
-          Search People
-        </Button>
-      </ListItem>
-      <ListItem>
-        <Button onClick={requestDeleteSkills} leftIcon={<MdDelete />} width="full">
-          Delete All Skills
-        </Button>
-      </ListItem>
-    </List>
+    <VStack spacing={2} align="stretch">
+      <Text fontSize="xs" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+        Open a LinkedIn page
+      </Text>
+      <Button
+        onClick={openMyNetwork}
+        leftIcon={<MdGroups size={18} />}
+        justifyContent="flex-start"
+        size="md"
+        variant="solid"
+      >
+        People You May Know
+      </Button>
+      <Button
+        onClick={openSearchPeople}
+        leftIcon={<MdPersonSearch size={18} />}
+        justifyContent="flex-start"
+        size="md"
+        variant="outline"
+      >
+        Search People
+      </Button>
+      <Divider my={1} borderColor="whiteAlpha.200" />
+      <Text fontSize="xs" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+        Profile tools
+      </Text>
+      <Button
+        onClick={requestDeleteSkills}
+        leftIcon={<MdDelete size={18} />}
+        justifyContent="flex-start"
+        size="md"
+        variant="ghost"
+        colorScheme="red"
+      >
+        Delete All Skills
+      </Button>
+    </VStack>
   );
 }
 
@@ -86,27 +128,42 @@ function ConnectingView({ port }) {
     port.postMessage({
       id: isRunning ? MessageId.StopAutoConnect : MessageId.StartAutoConnect,
     });
-    // Optimistic — content script will echo back RunningStateUpdated.
     setIsRunning(!isRunning);
   };
 
-  const percent = sessionCap > 0 ? (clickCount / Number(sessionCap)) * 100 : 0;
+  const cap = Number(sessionCap) || 0;
+  const percent = cap > 0 ? Math.min(100, (clickCount / cap) * 100) : 0;
 
   return (
-    <VStack spacing="3">
-      <Box>
-        <Text fontSize="18px">Invitations Sent</Text>
-      </Box>
-      <Box>
-        <CircularProgress value={percent} color="green.400" size="100px">
-          <CircularProgressLabel>{clickCount}</CircularProgressLabel>
+    <VStack spacing={4} align="stretch">
+      <VStack spacing={1}>
+        <Text fontSize="sm" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+          Invitations sent
+        </Text>
+        <CircularProgress
+          value={percent}
+          color={isRunning ? 'brand.400' : 'gray.500'}
+          trackColor="whiteAlpha.200"
+          size="120px"
+          thickness="8px"
+          capIsRound
+        >
+          <CircularProgressLabel fontSize="2xl" fontWeight="bold">
+            {clickCount}
+          </CircularProgressLabel>
         </CircularProgress>
-      </Box>
-      <Box>
-        <Button colorScheme={isRunning ? 'red' : 'green'} onClick={onToggle} width="full">
-          {isRunning ? 'STOP' : 'START'} CONNECTING
-        </Button>
-      </Box>
+        <Text fontSize="xs" color="gray.500">
+          Session cap: {cap}
+        </Text>
+      </VStack>
+      <Button
+        colorScheme={isRunning ? 'red' : 'brand'}
+        onClick={onToggle}
+        size="lg"
+        width="full"
+      >
+        {isRunning ? 'Stop' : 'Start'} connecting
+      </Button>
     </VStack>
   );
 }
@@ -152,14 +209,13 @@ export default function App() {
     };
   }, [setIsRunning, setClickCount, setSessionCap]);
 
-  // Show the connecting view once the content-script port reports back; until
-  // then (e.g. non-LinkedIn tab, or content script not yet injected) show the
-  // action list so the user can navigate to a supported page.
   return (
     <ChakraProvider theme={theme}>
-      <Header />
-      <Box padding="5">
-        {isConnected ? <ConnectingView port={portRef.current} /> : <ActionList />}
+      <Box width={POPUP_WIDTH} bg="#0f1419" color="white">
+        <Header connected={isConnected} />
+        <Box p={5}>
+          {isConnected ? <ConnectingView port={portRef.current} /> : <ActionList />}
+        </Box>
       </Box>
     </ChakraProvider>
   );
