@@ -4,6 +4,18 @@ Chrome extension (MV3) that auto-connects with People You May Know on LinkedIn a
 
 ## Install
 
+### Option A — Prebuilt release (recommended)
+
+1. Go to the [Releases page](https://github.com/faketut/Linkit/releases) and download the latest `linkit-vX.Y.Z.zip`.
+2. Unzip it — you'll get a folder (e.g. `linkit-v0.1.0/`) containing `manifest.json`.
+3. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
+4. Toggle **Developer mode** (top-right).
+5. Click **Load unpacked** → select the unzipped folder.
+
+To update: download the new zip, unzip, then on the Linkit row in `chrome://extensions` click the refresh icon (or remove + Load unpacked again).
+
+### Option B — Build from source
+
 ```sh
 npm install
 npm run build
