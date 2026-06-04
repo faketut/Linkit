@@ -18,7 +18,7 @@ import {
 import { MdGroups, MdPersonSearch, MdSettings, MdDelete } from 'react-icons/md';
 
 import { theme } from '../shared/theme.js';
-import { MessageId } from '../shared/constants.js';
+import { Links, MessageId } from '../shared/constants.js';
 import {
   clickCountAtom,
   isRunningAtom,
@@ -79,7 +79,12 @@ function Header({ connected }) {
 function ActionList() {
   return (
     <VStack spacing={2} align="stretch">
-      <Text fontSize="xs" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+      <Text
+        fontSize="xs"
+        color="gray.400"
+        textTransform="uppercase"
+        letterSpacing="wider"
+      >
         Open a LinkedIn page
       </Text>
       <Button
@@ -101,7 +106,12 @@ function ActionList() {
         Search People
       </Button>
       <Divider my={1} borderColor="whiteAlpha.200" />
-      <Text fontSize="xs" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+      <Text
+        fontSize="xs"
+        color="gray.400"
+        textTransform="uppercase"
+        letterSpacing="wider"
+      >
         Profile tools
       </Text>
       <Button
@@ -137,7 +147,12 @@ function ConnectingView({ port }) {
   return (
     <VStack spacing={4} align="stretch">
       <VStack spacing={1}>
-        <Text fontSize="sm" color="gray.400" textTransform="uppercase" letterSpacing="wider">
+        <Text
+          fontSize="sm"
+          color="gray.400"
+          textTransform="uppercase"
+          letterSpacing="wider"
+        >
           Invitations sent
         </Text>
         <CircularProgress
@@ -159,12 +174,19 @@ function ConnectingView({ port }) {
       <Button
         colorScheme={isRunning ? 'red' : 'brand'}
         onClick={onToggle}
+        isDisabled={!port}
         size="lg"
         width="full"
       >
-        {isRunning ? 'Stop' : 'Start'} connecting
+        {port ? `${isRunning ? 'Stop' : 'Start'} connecting` : 'Preparing connection...'}
       </Button>
     </VStack>
+  );
+}
+
+function canAutoConnectOnUrl(url = '') {
+  return (
+    url.includes(Links.PatternOfSearchPage) || url.includes(Links.PatternOfMyNetworkPage)
   );
 }
 
@@ -174,12 +196,18 @@ export default function App() {
   const [, setSessionCap] = useAtom(sessionCapAtom);
   const portRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [canAutoConnectPage, setCanAutoConnectPage] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const cap = await loadSessionCap();
       if (!cancelled) setSessionCap(cap);
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!cancelled) {
+        setCanAutoConnectPage(canAutoConnectOnUrl(tab?.url || ''));
+      }
 
       const port = await connectToActiveTab();
       if (cancelled || !port) return;
@@ -212,9 +240,13 @@ export default function App() {
   return (
     <ChakraProvider theme={theme}>
       <Box width={POPUP_WIDTH} bg="#0f1419" color="white">
-        <Header connected={isConnected} />
+        <Header connected={canAutoConnectPage && isConnected} />
         <Box p={5}>
-          {isConnected ? <ConnectingView port={portRef.current} /> : <ActionList />}
+          {canAutoConnectPage ? (
+            <ConnectingView port={portRef.current} />
+          ) : (
+            <ActionList />
+          )}
         </Box>
       </Box>
     </ChakraProvider>

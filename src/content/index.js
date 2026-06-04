@@ -247,6 +247,7 @@ const clickCount = signal(0);
 const sessionCap = signal(100);
 const currentUrl = signal('');
 const activePort = signal(/** @type {chrome.runtime.Port | null} */ (null));
+const emptyMyNetworkScans = signal(0);
 
 /** Dismiss any send-invite / in-mail modals; resolves once one is dismissed or polling caps out. */
 function dismissModals() {
@@ -255,8 +256,7 @@ function dismissModals() {
     const id = setInterval(() => {
       // Preferred: "Send without a note" on the add-note modal.
       const sendWithoutNote =
-        findButtonByText('Send without a note') ||
-        findButtonByText('Send without note');
+        findButtonByText('Send without a note') || findButtonByText('Send without note');
       if (sendWithoutNote) focusClick(sendWithoutNote);
 
       const closeIcon = document.querySelector(Selectors.CloseSendInMailsModalButton);
@@ -314,6 +314,7 @@ function clickNextPage() {
 }
 
 function onConnectButtonFound(btn) {
+  emptyMyNetworkScans.set(0);
   focusClick(btn);
   btn.setAttribute('disabled', 'disabled');
   // Defer the post-click work (count++ / modal dismissal / pacing) to the orchestrator.
@@ -328,22 +329,41 @@ function onConnectButtonFound(btn) {
  */
 function onNoConnectButton() {
   if (!isRunning.get()) return;
+
+  // Background-tab timer throttling can delay LinkedIn rendering.
+  // Retry later instead of treating this as terminal exhaustion.
+  if (document.hidden) {
+    setTimeout(() => driveAutoConnect(), 2500);
+    return;
+  }
+
   const type = pageType.get();
 
   if (type === PageType.MyNetwork) {
     const loadMore =
       findButtonByText('Load more') || findButtonByText('Show more results');
     if (loadMore) {
+      emptyMyNetworkScans.set(0);
       focusClick(loadMore);
       setTimeout(() => driveAutoConnect(), 1500);
       return;
     }
     const showAll = findButtonByText('Show all');
     if (showAll) {
+      emptyMyNetworkScans.set(0);
       focusClick(showAll);
       setTimeout(() => driveAutoConnect(), 1800);
       return;
     }
+    const roundsWithoutTarget = emptyMyNetworkScans.get() + 1;
+    emptyMyNetworkScans.set(roundsWithoutTarget);
+
+    // Require a few consecutive empty scans before stopping.
+    if (roundsWithoutTarget < 3) {
+      setTimeout(() => driveAutoConnect(), 2000);
+      return;
+    }
+
     // Nothing more to expand — stop the loop.
     console.info('[Linkit] No more Connect / Show all / Load more buttons found.');
     stopAutoConnect();
@@ -412,6 +432,7 @@ function driveAutoConnect() {
 }
 
 function startAutoConnect() {
+  emptyMyNetworkScans.set(0);
   isRunning.set(true);
 }
 
@@ -527,6 +548,7 @@ async function loadSessionCapFromSync() {
 (async () => {
   startSignalBroadcasts();
   startMessageListener();
+  startPortListener();
 
   if (window.location.href.includes('/details/skills/')) {
     pageType.set(PageType.Skills);
@@ -534,7 +556,6 @@ async function loadSessionCapFromSync() {
   checkAndDeleteSkills();
 
   await loadSessionCapFromSync();
-  startPortListener();
   startUrlWatcher();
   // Seed initial URL classification.
   currentUrl.set(window.location.href);

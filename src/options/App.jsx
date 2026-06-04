@@ -127,13 +127,7 @@ export default function App() {
                 Tune the auto-connect limits to stay safe.
               </Text>
             </VStack>
-            <Badge
-              colorScheme="green"
-              variant="subtle"
-              borderRadius="full"
-              px={3}
-              py={1}
-            >
+            <Badge colorScheme="green" variant="subtle" borderRadius="full" px={3} py={1}>
               v{chrome?.runtime?.getManifest?.()?.version ?? ''}
             </Badge>
           </Flex>
@@ -207,8 +201,8 @@ export default function App() {
               </Stack>
 
               <FormHelperText color="gray.400">
-                Linkit automatically stops connecting after reaching this value.
-                Allowed range: {LINKIT_SESSION_CAP_MIN}–{LINKIT_SESSION_CAP_MAX}.
+                Linkit automatically stops connecting after reaching this value. Allowed
+                range: {LINKIT_SESSION_CAP_MIN}–{LINKIT_SESSION_CAP_MAX}.
               </FormHelperText>
             </FormControl>
 
