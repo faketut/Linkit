@@ -1,6 +1,6 @@
 {
   "name": "linkit",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "Linkit Chrome extension — LinkedIn auto-connect + bulk skill deletion (MV3).",
   "license": "MIT",
