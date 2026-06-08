@@ -239,7 +239,10 @@ const emptyMyNetworkScans = signal(0);
 async function dismissConnectModal() {
   const btn = await waitForElement(
     () =>
-      findButtonByText('Send without a note') || findButtonByText('Send without note'),
+      findButtonByText('Send without a note') ||
+      findButtonByText('Send without note') ||
+      findElementByXPath("//button[.//span[normalize-space()='Send without a note']]") ||
+      findElementByXPath("//button[.//span[normalize-space()='Send without note']]"),
     { timeout: 3000 },
   );
   if (btn) focusClick(btn);
