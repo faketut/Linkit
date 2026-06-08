@@ -212,7 +212,17 @@ export default function App() {
       const port = await connectToActiveTab();
       if (cancelled || !port) return;
       portRef.current = port;
-      port.onDisconnect.addListener(() => setIsConnected(false));
+      port.onDisconnect.addListener(() => {
+        // Reading runtime.lastError here prevents noisy "unchecked runtime.lastError"
+        // when the active tab has no receiving content-script endpoint.
+        if (chrome.runtime.lastError) {
+          console.debug(
+            'Linkit: popup port disconnected:',
+            chrome.runtime.lastError.message,
+          );
+        }
+        setIsConnected(false);
+      });
       port.onMessage.addListener((msg) => {
         switch (msg?.id) {
           case MessageId.ConnectionEstablished:

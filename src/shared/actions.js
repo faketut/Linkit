@@ -4,6 +4,12 @@ import { Links } from './constants.js';
 export async function connectToActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return null;
+  const url = tab.url || '';
+  const supported =
+    url.includes(Links.PatternOfSearchPage) ||
+    url.includes(Links.PatternOfMyNetworkPage) ||
+    url.includes(Links.PatternOfSkillsPage);
+  if (!supported) return null;
   return chrome.tabs.connect(tab.id);
 }
 
