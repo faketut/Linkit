@@ -237,15 +237,78 @@ const emptyMyNetworkScans = signal(0);
 /** After a Connect click, wait briefly for the "Send without a note" button.
  *  If it appears, click it. If not, do nothing — let the loop proceed. */
 async function dismissConnectModal() {
-  const btn = await waitForElement(
-    () =>
-      findButtonByText('Send without a note') ||
-      findButtonByText('Send without note') ||
-      findElementByXPath("//button[.//span[normalize-space()='Send without a note']]") ||
-      findElementByXPath("//button[.//span[normalize-space()='Send without note']]"),
-    { timeout: 3000 },
-  );
-  if (btn) focusClick(btn);
+  const DEBUG_SEND_WITHOUT_NOTE = true;
+  const normalizeLabel = (el) =>
+    (el?.innerText || el?.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+  const findSendWithoutNoteButton = () => {
+    const dialog =
+      document.querySelector('#artdeco-modal-outlet [role="dialog"]') ||
+      document.querySelector('.artdeco-modal[role="dialog"]') ||
+      document.querySelector('.artdeco-modal');
+    const root = dialog || document;
+    const buttons = Array.from(root.querySelectorAll('button'));
+
+    if (DEBUG_SEND_WITHOUT_NOTE) {
+      console.debug('[Linkit][diag] modal root:', dialog ? 'dialog' : 'document');
+      console.debug(
+        '[Linkit][diag] modal buttons:',
+        buttons.map((el) => ({
+          id: el.id || null,
+          className: el.className || null,
+          ariaLabel: el.getAttribute('aria-label') || null,
+          disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
+          text: normalizeLabel(el),
+        })),
+      );
+    }
+
+    const byText = buttons.find((el) => {
+      if (el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+      const label = normalizeLabel(el);
+      return label.includes('send without a note') || label.includes('send without note');
+    });
+    if (byText) {
+      if (DEBUG_SEND_WITHOUT_NOTE) {
+        console.debug('[Linkit][diag] match source: byText', {
+          id: byText.id || null,
+          text: normalizeLabel(byText),
+        });
+      }
+      return byText;
+    }
+
+    const byXPath =
+      findElementByXPath(
+        "//button[.//span[contains(normalize-space(), 'Send without a note')]]",
+      ) ||
+      findElementByXPath(
+        "//button[.//span[contains(normalize-space(), 'Send without note')]]",
+      );
+
+    if (DEBUG_SEND_WITHOUT_NOTE) {
+      console.debug('[Linkit][diag] match source:', byXPath ? 'xpath' : 'none', {
+        id: byXPath?.id || null,
+        text: normalizeLabel(byXPath),
+      });
+    }
+
+    return byXPath;
+  };
+
+  const btn = await waitForElement(() => findSendWithoutNoteButton(), { timeout: 5000 });
+  if (DEBUG_SEND_WITHOUT_NOTE) {
+    console.debug('[Linkit][diag] final button found:', Boolean(btn), {
+      id: btn?.id || null,
+      text: normalizeLabel(btn),
+    });
+  }
+  if (btn) {
+    focusClick(btn);
+    if (DEBUG_SEND_WITHOUT_NOTE) {
+      console.debug('[Linkit][diag] clicked Send without note button.');
+    }
+  }
 }
 
 /** Scroll until a connect button appears, then click it. `finder` may be a
