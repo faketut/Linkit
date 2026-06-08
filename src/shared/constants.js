@@ -41,7 +41,6 @@ export const MessageId = Object.freeze({
 });
 
 // --- Linkit safety constants (issue #10) ---
-export const LINKIT_DAILY_CAP = 40;
 export const LINKIT_SESSION_CAP_MIN = 1;
 export const LINKIT_SESSION_CAP_MAX = 500;
 export const LINKIT_SESSION_CAP_DEFAULT = 100;

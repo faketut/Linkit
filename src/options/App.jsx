@@ -28,14 +28,10 @@ import {
   VStack,
   useToast,
 } from '@chakra-ui/react';
-import { MdShield, MdSpeed, MdTune } from 'react-icons/md';
+import { MdSpeed, MdTune } from 'react-icons/md';
 
 import { theme } from '../shared/theme.js';
-import {
-  LINKIT_DAILY_CAP,
-  LINKIT_SESSION_CAP_MAX,
-  LINKIT_SESSION_CAP_MIN,
-} from '../shared/constants.js';
+import { LINKIT_SESSION_CAP_MAX, LINKIT_SESSION_CAP_MIN } from '../shared/constants.js';
 import { loadSessionCap, saveSessionCap, sessionCapAtom } from '../shared/atoms.js';
 
 function StatCard({ icon, label, value, hint }) {
@@ -139,12 +135,6 @@ export default function App() {
               label="Session cap"
               value={sessionCap}
               hint="Per popup session"
-            />
-            <StatCard
-              icon={MdShield}
-              label="Daily cap"
-              value={LINKIT_DAILY_CAP}
-              hint="Hard-coded safety limit"
             />
           </Stack>
 

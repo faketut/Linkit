@@ -13,7 +13,6 @@
 import {
   AUTO_CONNECT_MAX_DELAY_MS,
   AUTO_CONNECT_MIN_DELAY_MS,
-  LINKIT_DAILY_CAP,
   LINKIT_INVITE_LIMIT_TEXT,
   Links,
   MAX_POLL_ATTEMPTS,
@@ -50,20 +49,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
 // ---------------------------------------------------------------------------
-// Daily-cap persistence (issue #10) — bucketed by ISO date in storage.local.
-// ---------------------------------------------------------------------------
-const todayKey = () => 'linkit_daily_' + new Date().toISOString().slice(0, 10);
-
-function incrementDailyCount() {
-  const k = todayKey();
-  return new Promise((resolve) => {
-    chrome.storage.local.get([k], (v) => {
-      const next = (Number(v?.[k]) || 0) + 1;
-      chrome.storage.local.set({ [k]: next }, () => resolve(next));
-    });
-  });
-}
-
 function isInviteLimitReached() {
   if (document.querySelector('#ip-fuse-limit-alert')) return true;
   const modals = document.querySelectorAll('.artdeco-modal, [role="dialog"]');
@@ -249,42 +234,15 @@ const currentUrl = signal('');
 const activePort = signal(/** @type {chrome.runtime.Port | null} */ (null));
 const emptyMyNetworkScans = signal(0);
 
-/** Dismiss any send-invite / in-mail modals; resolves once one is dismissed or polling caps out. */
-function dismissModals() {
-  return new Promise((resolve) => {
-    let attempts = 0;
-    const id = setInterval(() => {
-      // Preferred: "Send without a note" on the add-note modal.
-      const sendWithoutNote =
-        findButtonByText('Send without a note') || findButtonByText('Send without note');
-      if (sendWithoutNote) focusClick(sendWithoutNote);
-
-      const closeIcon = document.querySelector(Selectors.CloseSendInMailsModalButton);
-      const closeBtn = closeIcon?.parentElement;
-      if (closeBtn) focusClick(closeBtn);
-
-      const dismiss = document.querySelector(Selectors.SendInMailsModalDismissButton);
-      if (dismiss) focusClick(dismiss);
-
-      const sendBtn =
-        document.querySelector(Selectors.SendButtonFromSendInviteModal) ||
-        findButtonByText('Send now') ||
-        findButtonByText('Send');
-      if (sendBtn) focusClick(sendBtn);
-
-      attempts++;
-      if (
-        sendWithoutNote ||
-        sendBtn ||
-        dismiss ||
-        closeBtn ||
-        attempts > MAX_POLL_ATTEMPTS
-      ) {
-        clearInterval(id);
-        resolve(null);
-      }
-    }, POLL_INTERVAL_MS);
-  });
+/** After a Connect click, wait briefly for the "Send without a note" button.
+ *  If it appears, click it. If not, do nothing — let the loop proceed. */
+async function dismissConnectModal() {
+  const btn = await waitForElement(
+    () =>
+      findButtonByText('Send without a note') || findButtonByText('Send without note'),
+    { timeout: 3000 },
+  );
+  if (btn) focusClick(btn);
 }
 
 /** Scroll until a connect button appears, then click it. `finder` may be a
@@ -376,24 +334,15 @@ function onNoConnectButton() {
 /** Single cycle after a successful invite click: bump counts, sleep, then loop or stop. */
 async function postClickCycle() {
   clickCount.set(clickCount.get() + 1);
-  void dismissModals();
+  await dismissConnectModal();
 
-  const dailyCount = await incrementDailyCount();
-
-  // Rate-limit jitter (issue #10).
+  // Rate-limit jitter.
   await sleep(randomInt(AUTO_CONNECT_MIN_DELAY_MS, AUTO_CONNECT_MAX_DELAY_MS));
 
   if (!isRunning.get()) return;
 
   if (isInviteLimitReached()) {
     console.warn('[Linkit] LinkedIn invite-limit modal detected; stopping.');
-    stopAutoConnect();
-    return;
-  }
-  if (dailyCount >= LINKIT_DAILY_CAP) {
-    console.warn(
-      '[Linkit] Daily invite cap reached (' + LINKIT_DAILY_CAP + '); stopping.',
-    );
     stopAutoConnect();
     return;
   }
