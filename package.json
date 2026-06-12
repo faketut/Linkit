@@ -14,10 +14,10 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prerelease": "git add -A && git diff --cached --quiet || git commit -m 'chore: prepare release'",
-    "release": "npm run lint && npm run build && npm run prerelease && npm version patch -m 'chore: release v%s' && git push --follow-tags",
-    "release:minor": "npm run lint && npm run build && npm run prerelease && npm version minor -m 'chore: release v%s' && git push --follow-tags",
-    "release:major": "npm run lint && npm run build && npm run prerelease && npm version major -m 'chore: release v%s' && git push --follow-tags"
+    "release:prep": "npm run format && git add -A && git diff --cached --quiet || git commit -m 'chore: prepare release'",
+    "release": "npm run release:prep && npm run lint && npm run format:check && npm run build && npm version patch -m 'chore: release v%s' && git push --follow-tags",
+    "release:minor": "npm run release:prep && npm run lint && npm run format:check && npm run build && npm version minor -m 'chore: release v%s' && git push --follow-tags",
+    "release:major": "npm run release:prep && npm run lint && npm run format:check && npm run build && npm version major -m 'chore: release v%s' && git push --follow-tags"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.10.4",

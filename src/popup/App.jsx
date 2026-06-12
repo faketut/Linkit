@@ -144,9 +144,7 @@ function Header({ statusTone, statusLabel, settingsOpen, onToggleSettings }) {
             variant="ghost"
             aria-label={settingsOpen ? 'Back to actions' : 'Open settings'}
             aria-pressed={settingsOpen}
-            icon={
-              settingsOpen ? <MdArrowBack size={18} /> : <MdSettings size={18} />
-            }
+            icon={settingsOpen ? <MdArrowBack size={18} /> : <MdSettings size={18} />}
             onClick={onToggleSettings}
           />
         </Tooltip>
